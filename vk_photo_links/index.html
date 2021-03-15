@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.1//EN">
+<html>
+<head>
+  <script src="https://vk.com/js/api/xd_connection.js?2" type="text/javascript"></script>
+</head>
+<body>
+
+<script type="text/javascript" language="javascript">
+
+  var photo_sizes_list = ['s', 'm', 'x', 'o', 'p', 'q', 'r', 'y', 'z', 'w'];
+
+  function get_imgs(url, callback)
+  {
+    var regexp = /http(?:s)?:\/\/vk.com\/album(\d+)_(\d+)/g;
+    var match = regexp.exec(url);
+
+    if (match == null) return false;
+
+    var owner_id = match[1];
+    var album_id = "";
+
+    if (match[2] == "0") album_id = "profile"
+    else if (match[2] == "00") album_id = "wall"
+    else if (match[2] == "000") album_id = "saved"
+    else album_id = match[2];
+    
+    VK.api("photos.get", {"owner_id": owner_id, "album_id": album_id, "photo_sizes": "1", "offset": "0", "v": "5.130"}, function (data) {
+
+      var response = data.response;
+
+      var json_count = data.response.count;
+      var count = 0;
+
+      var str = '';
+
+      for (var i = 0; i < response.items.length; i++) {
+        var item = response.items[i];
+        var photo_size_index = null;
+        if (i > 0) str += "\n";
+        for (var n = photo_sizes_list.length - 1; n >= 0 && photo_size_index == null; n--) {
+          for (var m = 0; m < item.sizes.length; m++) {
+            if (item.sizes[m].type == photo_sizes_list[n]) {
+              photo_size_index = m;
+              break;
+            }
+          }
+        }
+        str += `<img src=${item.sizes[photo_size_index].url}>`;
+        count++;
+      }
+
+      callback(str, count, json_count);
+
+    });
+
+    return true;
+  }
+
+  function on_form_submit()
+  {
+    var url = document.getElementById("url").value.trim();
+
+    var result = get_imgs(url, function(str, count, json_count) {
+      var text = document.getElementById("text");
+      var clipboard_status = document.getElementById("clipboad_status");
+      var msg = document.getElementById("msg");
+      text.value = str;
+      text.focus();
+      text.select();
+      try {
+        document.execCommand("copy");
+        clipboad_status.innerText = "Скопировано в буфер обмена";
+        clipboard_status.style.color = "black";
+      } catch (err) {
+        clipboard_status.innerText = "Не удалось скопировать в буфер обмена";
+        clipboard_status.style.color = "red";
+      }
+      msg.innerText = `Обработано ${count} из ${json_count} фото`;
+      msg.style.color = "black";
+    });
+
+    if (!result) {
+      msg.innerText = "Неправильная ссылка";
+      msg.style.color = "red";
+    }
+    else {
+      msg.style.color = "black";
+    }
+  }
+
+  function vk_init()
+  {
+    VK.init(function() {
+      // API initialization succeeded
+      document.getElementById("submit").disabled = false;
+    }, function() {
+      // API initialization failed
+      alert("API initialization failed");
+    }, '5.130');
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    document.removeEventListener("DOMContentLoaded", arguments.callee, false);
+    vk_init();
+  }, false );
+
+</script>
+
+<div align="center">
+  <h2>VK Photo Links</h2>
+</div>
+  
+<div id="wrapper" style="width: 607px; height: 500px; margin: 0 auto">
+  <form onsubmit="return false;" method="post" name="form">
+    <label for="url">Ссылка на альбом:</label>
+    <input type="text" id="url" name="url" style="width: 380px" />
+    <input type="button" id="submit" onclick="on_form_submit()" value="Отправить" disabled="true" />
+  </form>
+  <textarea id="text" style="width: 100%; height: 300px; box-sizing: border-box; margin-top: 20px; resize: none"></textarea>
+  <p id="msg" style="margin-top: 10px; margin-bottom: 0px"></p>
+  <p id="clipboad_status" style="margin-top: 0px"></p>
+</div>
+  
+</body>
+</html>
