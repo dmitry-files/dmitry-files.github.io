@@ -45,7 +45,8 @@
             }
           }
         }
-        str += `<img src=${item.sizes[photo_size_index].url}>`;
+        str += `<img src=${item.sizes[photo_size_index].url}><br/><p></p>`;
+        if (i == 2) str += "\n<mychampcut></mychampcut>"
         count++;
       }
 
